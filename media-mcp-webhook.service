@@ -1,0 +1,15 @@
+[Unit]
+Description=Media MCP Webhook Receiver (Jellyseerr → Telegram)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projects/media-mcp
+ExecStart=/usr/bin/python3 %h/projects/media-mcp/webhook_receiver.py
+EnvironmentFile=%h/projects/media-mcp/.env
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

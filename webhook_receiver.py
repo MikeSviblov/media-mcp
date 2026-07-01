@@ -9,6 +9,7 @@ Env: WEBHOOK_SECRET, TELEGRAM_BOT_TOKEN_PRIMARY, TELEGRAM_CHAT_ID_PRIMARY,
      TELEGRAM_BOT_TOKEN_SECONDARY, TELEGRAM_CHAT_ID_SECONDARY
 """
 
+import hmac
 import json
 import logging
 import os
@@ -97,7 +98,8 @@ class WebhookHandler(BaseHTTPRequestHandler):
         if SECRET:
             auth = self.headers.get("Authorization", "")
             expected = f"Bearer {SECRET}"
-            if auth != expected:
+            # constant-time compare to avoid leaking the secret via timing
+            if not hmac.compare_digest(auth, expected):
                 log.warning("Unauthorized request from %s", self.client_address[0])
                 self.send_response(403)
                 self.end_headers()

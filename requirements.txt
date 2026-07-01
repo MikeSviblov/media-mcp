@@ -1,0 +1,4 @@
+# Runtime dependencies. Install: pip install -r requirements.txt
+# Or run directly without installing: uvx --with mcp --with requests python server.py
+mcp>=1.0
+requests>=2.28

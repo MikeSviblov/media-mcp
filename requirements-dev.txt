@@ -1,0 +1,4 @@
+# Dev/test dependencies (in addition to requirements.txt).
+# Install: pip install -r requirements-dev.txt && pytest -q
+-r requirements.txt
+pytest>=7.0

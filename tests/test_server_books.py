@@ -45,12 +45,12 @@ def test_book_search_filters_category_and_sorts_by_seeders(monkeypatch):
 
 
 def test_book_search_empty_query():
-    assert "пустой запрос" in server.book_search_releases("  ", "audiobook")
+    assert "empty query" in server.book_search_releases("  ", "audiobook")
 
 
 def test_book_search_no_results(monkeypatch):
     monkeypatch.setattr(server.requests, "get", lambda *a, **k: _resp(200, []))
-    assert "Ничего не найдено" in server.book_search_releases("zzz", "audiobook")
+    assert "Nothing found" in server.book_search_releases("zzz", "audiobook")
 
 
 # ── book_grab ────────────────────────────────────────────────
@@ -59,7 +59,7 @@ def test_book_grab_dry_run_sanitizes_placement():
     # input title carries a slash (path-injection attempt); must collapse to one component
     msg = server.book_grab("g", 1, "Фрэнк Герберт", "Дюна/злой", "audiobook", confirm=False)
     assert "DRY-RUN" in msg
-    placement = msg.split("«")[1].split("»")[0]
+    placement = msg.split("“")[1].split("”")[0]
     assert placement.count("/") == 1            # only the author/title separator survives
     assert placement.startswith("Фрэнк Герберт/")
 
@@ -107,4 +107,4 @@ def test_book_grab_prowlarr_error(monkeypatch):
     monkeypatch.setattr(server.requests, "get", lambda *a, **k: _resp(200, []))
     monkeypatch.setattr(server.requests, "post", lambda url, **k: _resp(500, text="boom"))
     msg = server.book_grab("g", 1, "A", "B", "audiobook", confirm=True)
-    assert "недоступен" in msg or "Ошибка" in msg
+    assert "unavailable" in msg or "Error" in msg

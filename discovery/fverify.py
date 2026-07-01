@@ -30,10 +30,10 @@ for t in targets:
     byc[c][1] += 1; byc[c][0] += 1 if ok else 0
     if not ok:
         byc[c][2].append(a)
-names = {"neofolk": "Неофолк/нордик", "artpop": "Арт-поп/сонграйтер",
-         "darkelectro": "Тёмн.электроника", "metal": "Метал"}
+names = {"neofolk": "Neofolk/Nordic", "artpop": "Art-pop/songwriter",
+         "darkelectro": "Dark electronica", "metal": "Metal"}
 tot = 0
 for c in ["neofolk", "artpop", "darkelectro", "metal"]:
     g, n, miss = byc[c]; tot += g
-    print("%-20s %2d/%d" % (names[c], g, n) + ("  нет: " + ", ".join(miss) if miss else "  ✓"))
-print("\nИТОГО: %d/%d" % (tot, len(targets)))
+    print("%-20s %2d/%d" % (names[c], g, n) + ("  missing: " + ", ".join(miss) if miss else "  ✓"))
+print("\nTOTAL: %d/%d" % (tot, len(targets)))

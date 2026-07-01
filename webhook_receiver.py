@@ -64,29 +64,29 @@ def format_notification(data: dict) -> str | None:
     media_type = media.get("media_type", "")
     year = media.get("tmdbYear", "")
 
-    type_label = "Фильм" if media_type == "movie" else "Сериал" if media_type == "tv" else ""
+    type_label = "Movie" if media_type == "movie" else "Series" if media_type == "tv" else ""
 
     if notif_type == "MEDIA_AVAILABLE":
         return (
-            f"🎬 <b>{title}</b> ({year}) готов!\n"
-            f"{type_label} скачался — приятного просмотра!"
+            f"🎬 <b>{title}</b> ({year}) is ready!\n"
+            f"{type_label} has downloaded — enjoy watching!"
         )
     elif notif_type == "MEDIA_APPROVED":
         return (
-            f"✅ <b>{title}</b> ({year}) одобрен\n"
-            f"Заказ принят, скачивание начнётся скоро."
+            f"✅ <b>{title}</b> ({year}) approved\n"
+            f"Request accepted, the download will start soon."
         )
     elif notif_type == "MEDIA_PENDING":
         return (
-            f"⏳ <b>{title}</b> ({year}) ожидает одобрения\n"
+            f"⏳ <b>{title}</b> ({year}) awaiting approval\n"
             f"{message}"
         )
     elif notif_type == "MEDIA_DECLINED":
-        return f"❌ <b>{title}</b> ({year}) отклонён\n{message}"
+        return f"❌ <b>{title}</b> ({year}) declined\n{message}"
     elif notif_type == "MEDIA_FAILED":
-        return f"⚠️ <b>{title}</b> ({year}) — ошибка загрузки\n{message}"
+        return f"⚠️ <b>{title}</b> ({year}) — download error\n{message}"
     elif notif_type == "TEST_NOTIFICATION":
-        return "🔔 Тест webhook — всё работает!"
+        return "🔔 Webhook test — everything works!"
     else:
         log.info("Unknown notification type: %s", notif_type)
         return None

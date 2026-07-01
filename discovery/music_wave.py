@@ -19,8 +19,8 @@ pending = [t for t in TARGETS
 print(f"pending={len(pending)} (done={len(done_t)} dead={len(dead_t)})", flush=True)
 
 results = list(prev)
-INFLIGHT = ("активных загруз", "много активных")
-DISK = ("мало места", "места на диске")
+INFLIGHT = ("active music download", "too many active")
+DISK = ("low disk space", "disk space")
 MAX_WAIT_MIN = 90
 start = time.time()
 stalls = 0

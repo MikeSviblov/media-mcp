@@ -274,7 +274,7 @@ def import_torrent(t: dict, lib_ids: list) -> bool:
     tail = "" if btype == "ebook" else " 🎧"
     # notify_chat == "silent" suppresses the notification (used for bulk orders)
     if notify_chat != "silent":
-        _notify_telegram(f"{icon} «{title}» — {author} готова в Audiobookshelf{tail}", notify_chat)
+        _notify_telegram(f"{icon} “{title}” — {author} is ready in Audiobookshelf{tail}", notify_chat)
     return True
 
 

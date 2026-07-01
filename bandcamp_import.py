@@ -97,7 +97,7 @@ def main() -> None:
     log("yt-dlp rc=" + str(rc))
     navidrome_scan()
     if chat != "silent":
-        notify("\U0001F3B5 «" + artist + "» (Bandcamp) готов в Navidrome", chat)
+        notify("\U0001F3B5 “" + artist + "” (Bandcamp) is ready in Navidrome", chat)
 
 
 if __name__ == "__main__":

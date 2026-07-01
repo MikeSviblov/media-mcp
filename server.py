@@ -96,16 +96,16 @@ def _status_message(resp: requests.Response, context: str = "") -> str:
     """Convert HTTP status codes to user-friendly messages."""
     code = resp.status_code
     if code == 409:
-        return f"Этот {context} уже заказан."
+        return f"This {context} is already requested."
     if code == 404:
-        return f"{context} не найден (ID не существует)."
+        return f"{context} not found (ID does not exist)."
     if code == 429:
-        return "Слишком много запросов — подождите минуту."
+        return "Too many requests — wait a minute."
     if code == 401:
-        return "Ошибка авторизации — проверьте API-ключ."
+        return "Authorization error — check the API key."
     if code >= 500:
-        return f"Сервис временно недоступен (HTTP {code})."
-    return f"Ошибка: HTTP {code} — {resp.text[:200]}"
+        return f"Service temporarily unavailable (HTTP {code})."
+    return f"Error: HTTP {code} — {resp.text[:200]}"
 
 
 def _abs_headers() -> dict:
@@ -164,12 +164,12 @@ def media_search(query: str, type: str = "any") -> str:
     Returns top results with tmdbId, title, year, overview, and availability status.
     """
     if not query.strip():
-        return "Ошибка: пустой запрос. Укажите название фильма или сериала."
+        return "Error: empty query. Provide a movie or series title."
     params = {"query": query, "page": 1, "language": "ru"}
     resp = requests.get(f"{JELLYSEERR_URL}/api/v1/search",
                         headers=_jellyseerr_headers(), params=params, timeout=TIMEOUT)
     if resp.status_code != 200:
-        return _status_message(resp, "поиск")
+        return _status_message(resp, "search")
     results = []
     for item in resp.json().get("results", [])[:10]:
         media_type = item.get("mediaType", "")
@@ -192,7 +192,7 @@ def media_search(query: str, type: str = "any") -> str:
             entry["status"] = "not_requested"
         results.append(entry)
     if not results:
-        return f"Ничего не найдено по запросу «{query}»."
+        return f"Nothing found for “{query}”."
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
@@ -206,15 +206,15 @@ def media_availability(tmdb_id: int, type: str = "movie") -> str:
     resp = requests.get(f"{JELLYSEERR_URL}/api/v1/{endpoint}/{tmdb_id}",
                         headers=_jellyseerr_headers(), timeout=TIMEOUT)
     if resp.status_code == 404:
-        return f"Не найден в TMDb (ID {tmdb_id})."
+        return f"Not found in TMDb (ID {tmdb_id})."
     if resp.status_code != 200:
-        return _status_message(resp, "проверка")
+        return _status_message(resp, "check")
     data = resp.json()
     title = data.get("title") or data.get("name", "")
     ms = data.get("mediaInfo", {})
     if not ms:
         return json.dumps({"title": title, "status": "not_in_library",
-                           "message": "Не в библиотеке и не заказан."}, ensure_ascii=False)
+                           "message": "Not in library and not requested."}, ensure_ascii=False)
     status_map = {1: "unknown", 2: "pending", 3: "processing",
                   4: "partially_available", 5: "available"}
     status = status_map.get(ms.get("status"), "unknown")
@@ -246,11 +246,11 @@ def media_request(tmdb_id: int, type: str = "movie", seasons: str = "all") -> st
         return json.dumps({
             "ok": True,
             "requestId": req.get("id"),
-            "message": f"Заказ создан! Качество: HD-1080p, русский. Придёт через несколько часов.",
+            "message": f"Request created! Quality: HD-1080p, Russian audio. Ready in a few hours.",
         }, ensure_ascii=False)
     if resp.status_code == 409:
-        return "Этот фильм/сериал уже заказан."
-    return _status_message(resp, "фильм/сериал")
+        return "This movie/series is already requested."
+    return _status_message(resp, "movie/series")
 
 
 @mcp.tool()
@@ -263,7 +263,7 @@ def media_request_status(limit: int = 10) -> str:
     resp = requests.get(f"{JELLYSEERR_URL}/api/v1/request",
                         headers=_jellyseerr_headers(), params=params, timeout=TIMEOUT)
     if resp.status_code != 200:
-        return _status_message(resp, "запросы")
+        return _status_message(resp, "requests")
     results = []
     status_map = {1: "pending_approval", 2: "approved", 3: "declined"}
     media_status_map = {1: "unknown", 2: "pending", 3: "processing",
@@ -281,7 +281,7 @@ def media_request_status(limit: int = 10) -> str:
         }
         results.append(entry)
     if not results:
-        return "Нет активных запросов."
+        return "No active requests."
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
@@ -303,7 +303,7 @@ def library_recently_added(limit: int = 10) -> str:
     resp = requests.get(f"{JELLYFIN_URL}/Items",
                         params=params, timeout=TIMEOUT)
     if resp.status_code != 200:
-        return _status_message(resp, "библиотека")
+        return _status_message(resp, "library")
     results = []
     for item in resp.json().get("Items", [])[:limit]:
         results.append({
@@ -313,7 +313,7 @@ def library_recently_added(limit: int = 10) -> str:
             "added": (item.get("DateCreated") or "")[:10],
         })
     if not results:
-        return "Библиотека пуста."
+        return "Library is empty."
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
@@ -357,7 +357,7 @@ def media_progress() -> str:
                 "status": rec.get("status", ""),
             })
     if not items:
-        return "Нет активных загрузок."
+        return "No active downloads."
     return json.dumps(items, ensure_ascii=False, indent=2)
 
 
@@ -372,9 +372,9 @@ def media_similar(tmdb_id: int, type: str = "movie", limit: int = 5) -> str:
                         headers=_jellyseerr_headers(),
                         params={"page": 1, "language": "ru"}, timeout=TIMEOUT)
     if resp.status_code == 404:
-        return f"Не найден в TMDb (ID {tmdb_id})."
+        return f"Not found in TMDb (ID {tmdb_id})."
     if resp.status_code != 200:
-        return _status_message(resp, "рекомендации")
+        return _status_message(resp, "recommendations")
     results = []
     for item in resp.json().get("results", [])[:limit]:
         results.append({
@@ -384,7 +384,7 @@ def media_similar(tmdb_id: int, type: str = "movie", limit: int = 5) -> str:
             "overview": (item.get("overview") or "")[:150],
         })
     if not results:
-        return "Похожих не найдено."
+        return "No similar titles found."
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
@@ -400,14 +400,14 @@ def book_search_releases(query: str, type: str = "audiobook") -> str:
     one (e.g. by narrator) and passes guid+indexerId to book_grab.
     """
     if not query.strip():
-        return "Ошибка: пустой запрос. Укажите автора и название книги."
+        return "Error: empty query. Provide the book author and title."
     cat = BOOK_CATEGORIES.get(type, 3030)
     resp = requests.get(f"{PROWLARR_URL}/api/v1/search",
                         headers=_arr_headers(PROWLARR_API_KEY),
                         params={"query": query, "categories": cat,
                                 "type": "search", "limit": 50}, timeout=TIMEOUT)
     if resp.status_code != 200:
-        return _status_message(resp, "поиск книг")
+        return _status_message(resp, "book search")
     releases = []
     for rel in resp.json():
         if cat not in [c.get("id") for c in (rel.get("categories") or [])]:
@@ -423,7 +423,7 @@ def book_search_releases(query: str, type: str = "audiobook") -> str:
     releases.sort(key=lambda r: -(r["seeders"] or 0))
     releases = releases[:20]
     if not releases:
-        return f"Ничего не найдено по запросу «{query}» ({type})."
+        return f"Nothing found for “{query}” ({type})."
     return json.dumps(releases, ensure_ascii=False, indent=2)
 
 
@@ -454,7 +454,7 @@ def book_status() -> str:
         })
     items.sort(key=lambda x: x["imported"])
     if not items:
-        return "Нет активных книжных загрузок."
+        return "No active book downloads."
     return json.dumps(items, ensure_ascii=False, indent=2)
 
 
@@ -469,7 +469,7 @@ def book_library_recent(limit: int = 10) -> str:
         return _status_message(libs, "Audiobookshelf")
     book_libs = [l for l in libs.json().get("libraries", []) if l.get("mediaType") == "book"]
     if not book_libs:
-        return "Книжных библиотек в Audiobookshelf не найдено."
+        return "No book libraries found in Audiobookshelf."
     results = []
     for lib in book_libs:
         r = requests.get(f"{ABS_URL}/api/libraries/{lib['id']}/items",
@@ -484,7 +484,7 @@ def book_library_recent(limit: int = 10) -> str:
                             "library": lib.get("name", "")})
     results = results[:limit]
     if not results:
-        return "Библиотека книг пуста."
+        return "Book library is empty."
     return json.dumps(results, ensure_ascii=False, indent=2)
 
 
@@ -530,16 +530,16 @@ def _music_guards() -> str:
     try:
         free = _get("/sync/maindata").json().get("server_state", {}).get("free_space_on_disk", 0)
         if free and free < MUSIC_MIN_FREE_GB * 1024 ** 3:
-            return (f"Мало места на диске ({round(free / 1024 ** 3)} ГБ свободно, "
-                    f"нужно ≥{MUSIC_MIN_FREE_GB}). Грэб отменён.")
+            return (f"Low disk space ({round(free / 1024 ** 3)} GB free, "
+                    f"need ≥{MUSIC_MIN_FREE_GB}). Grab cancelled.")
     except Exception:
         pass
     try:
         r = _get("/torrents/info", category=MUSIC_CATEGORY)
         inflight = sum(1 for t in r.json() if t.get("progress", 0) < 1.0) if r.status_code == 200 else 0
         if inflight >= MUSIC_MAX_INFLIGHT:
-            return (f"Слишком много активных загрузок музыки ({inflight}). "
-                    "Дождитесь завершения текущих.")
+            return (f"Too many active music downloads ({inflight}). "
+                    "Wait for the current ones to finish.")
     except Exception:
         pass
     return ""
@@ -562,7 +562,7 @@ def _subsonic_get(endpoint: str, **extra):
 def book_grab(guid: str, indexer_id: int, author: str, title: str,
               type: str = "audiobook", confirm: bool = False) -> str:
     """Order a chosen book/audiobook release: grab it into qBittorrent and tag it so
-    the importer hardlinks it into Audiobookshelf under «Автор/Название». Available in
+    the importer hardlinks it into Audiobookshelf under “Author/Title”. Available in
     safe mode too (Max can order audiobooks, like he requests movies).
     Args: guid + indexer_id from book_search_releases; author, title — canonical
     Russian names for the library folder; type — 'audiobook' or 'ebook';
@@ -573,8 +573,8 @@ def book_grab(guid: str, indexer_id: int, author: str, title: str,
     author_s = _sanitize_component(author)
     title_s = _sanitize_component(title)
     if not confirm:
-        return (f"DRY-RUN: скачать релиз guid={guid} (indexer {indexer_id}) и разместить "
-                f"как «{author_s}/{title_s}» ({type}). Вызовите с confirm=True.")
+        return (f"DRY-RUN: would download release guid={guid} (indexer {indexer_id}) and place "
+                f"it as “{author_s}/{title_s}” ({type}). Call with confirm=True.")
     before = _abooks_hashes()
     resp = requests.post(f"{PROWLARR_URL}/api/v1/search",
                          headers={**_arr_headers(PROWLARR_API_KEY), "Content-Type": "application/json"},
@@ -589,9 +589,8 @@ def book_grab(guid: str, indexer_id: int, author: str, title: str,
             new_hash = sorted(diff)[0]
             break
     if not new_hash:
-        return ("OK: релиз отправлен в qBittorrent, но торрент ещё не виден в очереди. "
-                "Тег для импортёра не поставлен — проверьте book_status и при необходимости "
-                "повторите.")
+        return ("OK: release sent to qBittorrent, but the torrent is not visible in the queue yet. "
+                "The importer tag was not set — check book_status and retry if needed.")
     # carry the requester's chat (this bot's NOTIFY_CHAT_ID) so the importer can
     # send the "book ready" notification to whoever ordered (primary user via
     # Sebastian, secondary user via Max), not a single hard-coded chat.
@@ -602,7 +601,7 @@ def book_grab(guid: str, indexer_id: int, author: str, title: str,
                   data={"hashes": new_hash, "tags": tag}, timeout=TIMEOUT)
     return json.dumps({
         "ok": True, "hash": new_hash[:12], "placement": f"{author_s}/{title_s}",
-        "message": f"Заказано: «{title_s}» — {author_s}. Появится в Audiobookshelf после загрузки.",
+        "message": f"Ordered: “{title_s}” — {author_s}. Will appear in Audiobookshelf after download.",
     }, ensure_ascii=False)
 
 
@@ -634,7 +633,7 @@ if MODE == "full":
                 "status": rec.get("status", ""),
                 "trackedDownloadStatus": rec.get("trackedDownloadStatus", ""),
             })
-        return json.dumps(records, ensure_ascii=False, indent=2) if records else "Очередь Radarr пуста."
+        return json.dumps(records, ensure_ascii=False, indent=2) if records else "Radarr queue is empty."
 
     @mcp.tool()
     @_safe_request
@@ -658,7 +657,7 @@ if MODE == "full":
                 "seeders": rel.get("seeders", 0),
                 "languages": [l.get("name", "") for l in rel.get("languages", [])],
             })
-        return json.dumps(releases, ensure_ascii=False, indent=2) if releases else "Релизов не найдено."
+        return json.dumps(releases, ensure_ascii=False, indent=2) if releases else "No releases found."
 
     @mcp.tool()
     @_safe_request
@@ -668,13 +667,13 @@ if MODE == "full":
         confirm — False for dry-run preview, True to execute.
         """
         if not confirm:
-            return f"DRY-RUN: будет скачан релиз guid={guid} через индексер {indexer_id}. Вызовите с confirm=True для выполнения."
+            return f"DRY-RUN: would download release guid={guid} via indexer {indexer_id}. Call with confirm=True to execute."
         payload = {"guid": guid, "indexerId": indexer_id}
         resp = requests.post(f"{RADARR_URL}/api/v3/release",
                              headers={**_arr_headers(RADARR_API_KEY), "Content-Type": "application/json"},
                              json=payload, timeout=TIMEOUT)
         if resp.status_code in (200, 201):
-            return "OK: релиз добавлен в очередь загрузки."
+            return "OK: release added to the download queue."
         return _status_message(resp, "Radarr grab")
 
     @mcp.tool()
@@ -685,14 +684,14 @@ if MODE == "full":
         confirm — False for dry-run, True to execute.
         """
         if not confirm:
-            action = "удалён из Radarr + файлы удалены" if delete_files else "удалён из Radarr (файлы сохранены)"
-            return f"DRY-RUN: фильм ID {movie_id} будет {action}. Вызовите с confirm=True."
+            action = "removed from Radarr + files deleted" if delete_files else "removed from Radarr (files kept)"
+            return f"DRY-RUN: movie ID {movie_id} will be {action}. Call with confirm=True."
         resp = requests.delete(f"{RADARR_URL}/api/v3/movie/{movie_id}",
                                headers=_arr_headers(RADARR_API_KEY),
                                params={"deleteFiles": str(delete_files).lower()},
                                timeout=TIMEOUT)
         if resp.status_code in (200, 204):
-            return f"OK: фильм {movie_id} удалён."
+            return f"OK: movie {movie_id} deleted."
         return _status_message(resp, "Radarr delete")
 
     # ── Sonarr ───────────────────────────────────────────────
@@ -718,7 +717,7 @@ if MODE == "full":
                 "eta": rec.get("timeleft", ""),
                 "status": rec.get("status", ""),
             })
-        return json.dumps(records, ensure_ascii=False, indent=2) if records else "Очередь Sonarr пуста."
+        return json.dumps(records, ensure_ascii=False, indent=2) if records else "Sonarr queue is empty."
 
     @mcp.tool()
     @_safe_request
@@ -742,7 +741,7 @@ if MODE == "full":
                 "seeders": rel.get("seeders", 0),
                 "languages": [l.get("name", "") for l in rel.get("languages", [])],
             })
-        return json.dumps(releases, ensure_ascii=False, indent=2) if releases else "Релизов не найдено."
+        return json.dumps(releases, ensure_ascii=False, indent=2) if releases else "No releases found."
 
     @mcp.tool()
     @_safe_request
@@ -752,13 +751,13 @@ if MODE == "full":
         confirm — False for dry-run, True to execute.
         """
         if not confirm:
-            return f"DRY-RUN: будет скачан релиз guid={guid}. Вызовите с confirm=True."
+            return f"DRY-RUN: would download release guid={guid}. Call with confirm=True."
         payload = {"guid": guid, "indexerId": indexer_id}
         resp = requests.post(f"{SONARR_URL}/api/v3/release",
                              headers={**_arr_headers(SONARR_API_KEY), "Content-Type": "application/json"},
                              json=payload, timeout=TIMEOUT)
         if resp.status_code in (200, 201):
-            return "OK: релиз добавлен в очередь."
+            return "OK: release added to the queue."
         return _status_message(resp, "Sonarr grab")
 
     @mcp.tool()
@@ -769,14 +768,14 @@ if MODE == "full":
         confirm — False for dry-run, True to execute.
         """
         if not confirm:
-            action = "удалён из Sonarr + файлы" if delete_files else "удалён из Sonarr (файлы сохранены)"
-            return f"DRY-RUN: сериал ID {series_id} будет {action}. Вызовите с confirm=True."
+            action = "removed from Sonarr + files" if delete_files else "removed from Sonarr (files kept)"
+            return f"DRY-RUN: series ID {series_id} will be {action}. Call with confirm=True."
         resp = requests.delete(f"{SONARR_URL}/api/v3/series/{series_id}",
                                headers=_arr_headers(SONARR_API_KEY),
                                params={"deleteFiles": str(delete_files).lower()},
                                timeout=TIMEOUT)
         if resp.status_code in (200, 204):
-            return f"OK: сериал {series_id} удалён."
+            return f"OK: series {series_id} deleted."
         return _status_message(resp, "Sonarr delete")
 
     # ── qBittorrent ──────────────────────────────────────────
@@ -809,7 +808,7 @@ if MODE == "full":
                 "category": t.get("category", ""),
                 "eta": t.get("eta", 0),
             })
-        return json.dumps(torrents, ensure_ascii=False, indent=2) if torrents else "Нет торрентов."
+        return json.dumps(torrents, ensure_ascii=False, indent=2) if torrents else "No torrents."
 
     @mcp.tool()
     @_safe_request
@@ -818,7 +817,7 @@ if MODE == "full":
         resp = requests.post(f"{QBIT_URL}/api/v2/torrents/pause",
                              cookies=_qbit_cookies(), data={"hashes": hash}, timeout=TIMEOUT)
         if resp.status_code == 200:
-            return f"OK: торрент {hash} приостановлен."
+            return f"OK: torrent {hash} paused."
         return _status_message(resp, "qBit pause")
 
     @mcp.tool()
@@ -828,7 +827,7 @@ if MODE == "full":
         resp = requests.post(f"{QBIT_URL}/api/v2/torrents/resume",
                              cookies=_qbit_cookies(), data={"hashes": hash}, timeout=TIMEOUT)
         if resp.status_code == 200:
-            return f"OK: торрент {hash} возобновлён."
+            return f"OK: torrent {hash} resumed."
         return _status_message(resp, "qBit resume")
 
     @mcp.tool()
@@ -839,14 +838,14 @@ if MODE == "full":
         confirm — False for dry-run, True to execute.
         """
         if not confirm:
-            action = "удалён + файлы удалены" if delete_files else "удалён (файлы сохранены)"
-            return f"DRY-RUN: торрент {hash} будет {action}. Вызовите с confirm=True."
+            action = "removed + files deleted" if delete_files else "removed (files kept)"
+            return f"DRY-RUN: torrent {hash} will be {action}. Call with confirm=True."
         resp = requests.post(f"{QBIT_URL}/api/v2/torrents/delete",
                              cookies=_qbit_cookies(),
                              data={"hashes": hash, "deleteFiles": str(delete_files).lower()},
                              timeout=TIMEOUT)
         if resp.status_code == 200:
-            return f"OK: торрент {hash} удалён."
+            return f"OK: torrent {hash} deleted."
         return _status_message(resp, "qBit delete")
 
     # ── Prowlarr ─────────────────────────────────────────────
@@ -867,7 +866,7 @@ if MODE == "full":
                 "protocol": idx.get("protocol", ""),
                 "enable": idx.get("enable", False),
             })
-        return json.dumps(indexers, ensure_ascii=False, indent=2) if indexers else "Нет индексеров."
+        return json.dumps(indexers, ensure_ascii=False, indent=2) if indexers else "No indexers."
 
     @mcp.tool()
     @_safe_request
@@ -877,8 +876,8 @@ if MODE == "full":
                              headers={**_arr_headers(PROWLARR_API_KEY), "Content-Type": "application/json"},
                              json={"id": indexer_id}, timeout=TIMEOUT)
         if resp.status_code == 200:
-            return f"OK: индексер {indexer_id} работает."
-        return f"FAIL: индексер {indexer_id} — {resp.text[:200]}"
+            return f"OK: indexer {indexer_id} is working."
+        return f"FAIL: indexer {indexer_id} — {resp.text[:200]}"
 
     # ── Jellyfin (admin) ─────────────────────────────────────
 
@@ -889,7 +888,7 @@ if MODE == "full":
         resp = requests.post(f"{JELLYFIN_URL}/Library/Refresh",
                              params=_jellyfin_params(), timeout=30)
         if resp.status_code == 204:
-            return "OK: сканирование библиотеки запущено."
+            return "OK: library scan started."
         return _status_message(resp, "Jellyfin scan")
 
     @mcp.tool()
@@ -901,7 +900,7 @@ if MODE == "full":
                                      "MetadataRefreshMode": "FullRefresh"},
                              timeout=30)
         if resp.status_code == 204:
-            return f"OK: метаданные для {item_id} обновляются."
+            return f"OK: metadata for {item_id} is refreshing."
         return _status_message(resp, "Jellyfin refresh")
 
     # ── Books / audiobooks (cancel — destructive, full only) ──
@@ -914,8 +913,8 @@ if MODE == "full":
         confirm — False for dry-run, True to execute.
         """
         if not confirm:
-            extra = " + файлы удалены" if delete_files else ""
-            return f"DRY-RUN: торрент {hash} будет отменён{extra}. Вызовите с confirm=True."
+            extra = " + files deleted" if delete_files else ""
+            return f"DRY-RUN: torrent {hash} will be cancelled{extra}. Call with confirm=True."
         def _del():
             return requests.post(f"{QBIT_URL}/api/v2/torrents/delete", cookies=_qbit_cookies(),
                                  data={"hashes": hash, "deleteFiles": str(delete_files).lower()},
@@ -925,7 +924,7 @@ if MODE == "full":
             _qbit_login()
             resp = _del()
         if resp.status_code == 200:
-            return f"OK: загрузка {hash} отменена."
+            return f"OK: download {hash} cancelled."
         return _status_message(resp, "book cancel")
 
     # ── Music (Navidrome pipeline, mirror of book_*; full-only — not for Max) ──
@@ -940,13 +939,13 @@ if MODE == "full":
         picks one and passes guid+indexerId to music_grab.
         """
         if not query.strip():
-            return "Ошибка: пустой запрос. Укажите артиста и альбом."
+            return "Error: empty query. Provide an artist and album."
         resp = requests.get(f"{PROWLARR_URL}/api/v1/search",
                             headers=_arr_headers(PROWLARR_API_KEY),
                             params={"query": query, "categories": MUSIC_CATEGORY_ID,
                                     "type": "search", "limit": 50}, timeout=TIMEOUT)
         if resp.status_code != 200:
-            return _status_message(resp, "поиск музыки")
+            return _status_message(resp, "music search")
         releases = []
         for rel in resp.json():
             cats = [c.get("id") for c in (rel.get("categories") or [])]
@@ -963,7 +962,7 @@ if MODE == "full":
         releases.sort(key=lambda r: -(r["seeders"] or 0))
         releases = releases[:20]
         if not releases:
-            return f"Ничего не найдено по запросу «{query}»."
+            return f"Nothing found for “{query}”."
         return json.dumps(releases, ensure_ascii=False, indent=2)
 
     @mcp.tool()
@@ -993,7 +992,7 @@ if MODE == "full":
             })
         items.sort(key=lambda x: x["imported"])
         if not items:
-            return "Нет активных музыкальных загрузок."
+            return "No active music downloads."
         return json.dumps(items, ensure_ascii=False, indent=2)
 
     @mcp.tool()
@@ -1007,13 +1006,13 @@ if MODE == "full":
             return _status_message(resp, "Navidrome")
         body = resp.json().get("subsonic-response", {})
         if body.get("status") != "ok":
-            return f"Navidrome ошибка: {body.get('error', {}).get('message', 'unknown')}"
+            return f"Navidrome error: {body.get('error', {}).get('message', 'unknown')}"
         albums = body.get("albumList2", {}).get("album", [])
         results = [{"album": a.get("name", ""), "artist": a.get("artist", ""),
                     "year": a.get("year", ""), "songs": a.get("songCount", 0)}
                    for a in albums[:limit]]
         if not results:
-            return "Фонотека Navidrome пуста."
+            return "Navidrome library is empty."
         return json.dumps(results, ensure_ascii=False, indent=2)
 
     @mcp.tool()
@@ -1024,8 +1023,8 @@ if MODE == "full":
         [Music] category, and tag it so the importer hardlinks it into Navidrome.
         State lives entirely in the qB tag (no DB).
         Args: guid + indexer_id from music_search_releases; artist, album — canonical
-        names for the library folder; kind — 'album' (single, → Артист/Альбом/) or
-        'discography' (one torrent with many albums → contents go under Артист/, since
+        names for the library folder; kind — 'album' (single, → Artist/Album/) or
+        'discography' (one torrent with many albums → contents go under Artist/, since
         Navidrome groups by tags); confirm — False for dry-run, True to execute.
         """
         import base64 as _b64
@@ -1035,9 +1034,9 @@ if MODE == "full":
         kind = kind if kind in ("album", "discography") else "album"
         placement = artist_s if kind == "discography" else f"{artist_s}/{album_s}"
         if not confirm:
-            note = " (дискография — может быть десятки ГБ)" if kind == "discography" else ""
-            return (f"DRY-RUN: скачать релиз guid={guid} (indexer {indexer_id}) и разместить "
-                    f"как «{placement}»{note}. Вызовите с confirm=True.")
+            note = " (discography — can be tens of GB)" if kind == "discography" else ""
+            return (f"DRY-RUN: would download release guid={guid} (indexer {indexer_id}) and place "
+                    f"it as “{placement}”{note}. Call with confirm=True.")
         guard = _music_guards()
         if guard:
             return guard
@@ -1055,8 +1054,8 @@ if MODE == "full":
                 new_hash = sorted(diff)[0]
                 break
         if not new_hash:
-            return ("OK: релиз отправлен в qBittorrent, но торрент ещё не виден. Тег/категория "
-                    "не выставлены — проверьте music_status и при необходимости повторите.")
+            return ("OK: release sent to qBittorrent, but the torrent is not visible yet. The tag/category "
+                    "were not set — check music_status and retry if needed.")
         # route to [Music] (set before download finishes → lands in [Music] save path)
         requests.post(f"{QBIT_URL}/api/v2/torrents/setCategory", cookies=_qbit_cookies(),
                       data={"hashes": new_hash, "category": MUSIC_CATEGORY}, timeout=TIMEOUT)
@@ -1066,10 +1065,10 @@ if MODE == "full":
         tag = "mus:" + _b64.urlsafe_b64encode(payload.encode()).decode()
         requests.post(f"{QBIT_URL}/api/v2/torrents/addTags", cookies=_qbit_cookies(),
                       data={"hashes": new_hash, "tags": tag}, timeout=TIMEOUT)
-        what = f"дискография «{artist_s}»" if kind == "discography" else f"«{album_s}» — {artist_s}"
+        what = f"discography “{artist_s}”" if kind == "discography" else f"“{album_s}” — {artist_s}"
         return json.dumps({
             "ok": True, "hash": new_hash[:12], "placement": placement, "kind": kind,
-            "message": f"Заказано: {what}. Появится в Navidrome после загрузки.",
+            "message": f"Ordered: {what}. Will appear in Navidrome after download.",
         }, ensure_ascii=False)
 
     @mcp.tool()
@@ -1080,8 +1079,8 @@ if MODE == "full":
         confirm — False for dry-run, True to execute.
         """
         if not confirm:
-            extra = " + файлы удалены" if delete_files else ""
-            return f"DRY-RUN: торрент {hash} будет отменён{extra}. Вызовите с confirm=True."
+            extra = " + files deleted" if delete_files else ""
+            return f"DRY-RUN: torrent {hash} will be cancelled{extra}. Call with confirm=True."
         def _del():
             return requests.post(f"{QBIT_URL}/api/v2/torrents/delete", cookies=_qbit_cookies(),
                                  data={"hashes": hash, "deleteFiles": str(delete_files).lower()},
@@ -1091,7 +1090,7 @@ if MODE == "full":
             _qbit_login()
             resp = _del()
         if resp.status_code == 200:
-            return f"OK: загрузка {hash} отменена."
+            return f"OK: download {hash} cancelled."
         return _status_message(resp, "music cancel")
 
     @mcp.tool()
@@ -1110,11 +1109,11 @@ if MODE == "full":
         u = (url or "").strip()
         p = _up.urlparse(u)
         if not (p.scheme in ("http", "https") and p.netloc.endswith("bandcamp.com")):
-            return "Ошибка: нужен URL вида https://…bandcamp.com (альбом или артист)."
+            return "Error: need a URL like https://…bandcamp.com (album or artist)."
         artist_s = _sanitize_component(artist)
         if not confirm:
-            return (f"DRY-RUN: скачать с Bandcamp {u} как «{artist_s}» (~128 kbps MP3, "
-                    "стрим без покупки). Вызовите с confirm=True.")
+            return (f"DRY-RUN: would download from Bandcamp {u} as “{artist_s}” (~128 kbps MP3, "
+                    "stream without purchase). Call with confirm=True.")
         chat = os.environ.get("NOTIFY_CHAT_ID", "") or "silent"
         remote = ("set -a; . " + BANDCAMP_ENV + " 2>/dev/null; set +a; "
                   "nohup python3 " + BANDCAMP_REMOTE + " "
@@ -1125,10 +1124,10 @@ if MODE == "full":
         try:
             _sp.run(ssh_cmd, timeout=20, check=False)
         except Exception as e:
-            return f"Ошибка запуска загрузки на media-nas: {type(e).__name__} — {e}"
+            return f"Error starting the download on media-nas: {type(e).__name__} — {e}"
         return json.dumps({
             "ok": True, "artist": artist_s, "source": "bandcamp", "quality": "~128k mp3",
-            "message": f"Запущена загрузка «{artist_s}» с Bandcamp (~128k). Появится в Navidrome через несколько минут.",
+            "message": f"Started downloading “{artist_s}” from Bandcamp (~128k). Will appear in Navidrome in a few minutes.",
         }, ensure_ascii=False)
 
 

@@ -45,12 +45,12 @@ def test_music_search_filters_category_and_sorts_by_seeders(monkeypatch):
 
 
 def test_music_search_empty_query():
-    assert "пустой запрос" in server.music_search_releases("  ")
+    assert "empty query" in server.music_search_releases("  ")
 
 
 def test_music_search_no_results(monkeypatch):
     monkeypatch.setattr(server.requests, "get", lambda *a, **k: _resp(200, []))
-    assert "Ничего не найдено" in server.music_search_releases("zzz")
+    assert "Nothing found" in server.music_search_releases("zzz")
 
 
 # ── music_grab ───────────────────────────────────────────────
@@ -59,7 +59,7 @@ def test_music_grab_dry_run_sanitizes_placement():
     # album carries a slash (path-injection attempt); must collapse to one component
     msg = server.music_grab("g", 1, "Кино", "Группа крови/evil", confirm=False)
     assert "DRY-RUN" in msg
-    placement = msg.split("«")[1].split("»")[0]
+    placement = msg.split("“")[1].split("”")[0]
     assert placement.count("/") == 1            # only the artist/album separator survives
     assert placement.startswith("Кино/")
 
@@ -106,9 +106,9 @@ def test_music_grab_tags_and_routes_new_torrent(monkeypatch):
 
 def test_music_grab_dry_run_discography_note():
     msg = server.music_grab("g", 1, "Pink Floyd", "Discography", kind="discography", confirm=False)
-    assert "DRY-RUN" in msg and "дискография" in msg
+    assert "DRY-RUN" in msg and "discography" in msg
     # discography placement is the artist only (no album wrapper)
-    placement = msg.split("«")[1].split("»")[0]
+    placement = msg.split("“")[1].split("”")[0]
     assert placement == "Pink Floyd"
 
 
@@ -124,7 +124,7 @@ def test_music_grab_refuses_when_disk_low(monkeypatch):
                         lambda url, **kw: grabbed.append(url) or _resp(200, {}))
     monkeypatch.setattr(server, "_qbit_cookie_jar", {"QBT_SID_8081": "sid"})
     msg = server.music_grab("g", 1, "A", "B", confirm=True)
-    assert "Мало места" in msg
+    assert "Low disk space" in msg
     assert not any("/api/v1/search" in u for u in grabbed)   # no Prowlarr grab happened
 
 
@@ -132,7 +132,7 @@ def test_music_grab_prowlarr_error(monkeypatch):
     monkeypatch.setattr(server.requests, "get", lambda *a, **k: _resp(200, []))
     monkeypatch.setattr(server.requests, "post", lambda url, **k: _resp(500, text="boom"))
     msg = server.music_grab("g", 1, "A", "B", confirm=True)
-    assert "недоступен" in msg or "Ошибка" in msg
+    assert "unavailable" in msg or "Error" in msg
 
 
 # ── music_status ─────────────────────────────────────────────

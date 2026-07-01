@@ -198,9 +198,9 @@ def import_torrent(t: dict) -> bool:
     _log(f"IMPORTED ({kind}) «{artist}/{album}» <- {os.path.basename(src)}")
     if notify_chat != "silent":
         if kind == "discography":
-            _notify_telegram(f"🎵 дискография «{artist}» готова в Navidrome", notify_chat)
+            _notify_telegram(f"🎵 discography “{artist}” is ready in Navidrome", notify_chat)
         else:
-            _notify_telegram(f"🎵 «{album}» — {artist} готов в Navidrome", notify_chat)
+            _notify_telegram(f"🎵 “{album}” — {artist} is ready in Navidrome", notify_chat)
     return True
 
 

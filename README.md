@@ -1,6 +1,8 @@
 # media-mcp
 
-MCP server for media stack management (Jellyseerr, Radarr, Sonarr, qBit, Jellyfin) — shared by Sebastian, Max, and Claude Code.
+MCP server for media stack management — movies/TV (Jellyseerr, Radarr, Sonarr,
+Jellyfin), audiobooks/ebooks (Prowlarr → qBittorrent → Audiobookshelf), and music
+(Prowlarr/Bandcamp → qBittorrent → Navidrome). Shared by Sebastian, Max, and Claude Code.
 
 ## Where it runs
 
@@ -32,14 +34,16 @@ media host                      bot host                    dev machine
 
 | Mode | Consumer | Tools |
 |------|----------|-------|
-| `safe` | Max (secondary user bot) | search, availability, request, status, recently_added, progress, similar |
-| `full` | Sebastian, Claude Code | all safe + radarr_*, sonarr_*, qbit_*, prowlarr_*, jellyfin_* |
+| `safe` | Max (secondary user bot) | movie/TV search+request+status, `book_*` (search/status/grab) |
+| `full` | Sebastian, Claude Code | all safe + `radarr_*`, `sonarr_*`, `qbit_*`, `prowlarr_*`, `jellyfin_*`, `music_*`, `book_cancel` |
 
 Set via `MEDIA_MCP_MODE` env variable.
 
 ## Tools
 
-### SAFE (7 tools)
+### SAFE (11 tools)
+
+Movies / TV:
 
 | Tool | Description |
 |------|-------------|
@@ -51,15 +55,38 @@ Set via `MEDIA_MCP_MODE` env variable.
 | `media_progress` | Download progress (Radarr/Sonarr queue) |
 | `media_similar` | Recommendations based on a title |
 
-### FULL (additional 16 tools)
+Audiobooks / ebooks (Prowlarr → qBittorrent → Audiobookshelf):
+
+| Tool | Description |
+|------|-------------|
+| `book_search_releases` | Search audiobook/ebook releases via Prowlarr |
+| `book_status` | Download status + whether imported into Audiobookshelf |
+| `book_library_recent` | Recently added books in Audiobookshelf |
+| `book_grab` | Grab a release, route to `[Abooks]`, tag for the importer (`confirm=True`) |
+
+### FULL (additional 23 tools)
 
 Radarr: `radarr_queue`, `radarr_search_releases`, `radarr_grab_release`, `radarr_delete_movie`
 Sonarr: `sonarr_queue`, `sonarr_search_releases`, `sonarr_grab_release`, `sonarr_delete_series`
 qBit: `qbit_list_torrents`, `qbit_pause`, `qbit_resume`, `qbit_delete`
 Prowlarr: `prowlarr_indexer_status`, `prowlarr_test_indexer`
 Jellyfin: `jellyfin_scan_library`, `jellyfin_refresh_item`
+Books: `book_cancel`
 
-Destructive tools (`*_delete`, `*_grab`) require `confirm=True`. Default is dry-run preview.
+Music (Prowlarr/Bandcamp → qBittorrent → Navidrome):
+
+| Tool | Description |
+|------|-------------|
+| `music_search_releases` | Search music releases via Prowlarr |
+| `music_status` | Download status + whether imported into Navidrome |
+| `music_library_recent` | Recently added albums in Navidrome |
+| `music_grab` | Grab a release, route to `[Music]`, tag for the importer (`confirm=True`) |
+| `music_cancel` | Cancel a music download |
+| `music_bandcamp` | Download a Bandcamp album/discography via yt-dlp (separate from torrents) |
+
+See `discovery/` for the batch taste-based music-collection top-up that drives `music_*`.
+
+Destructive tools (`*_delete`, `*_grab`, `*_cancel`) require `confirm=True`. Default is dry-run preview.
 
 ## Run
 
@@ -92,6 +119,10 @@ MEDIA_MCP_MODE=full JELLYSEERR_URL=... RADARR_URL=... RADARR_API_KEY=... \
 | `QBIT_USER` | full | qBittorrent username |
 | `QBIT_PASS` | full | qBittorrent password |
 
+Books add `ABS_URL` / `ABS_API_KEY` (Audiobookshelf); music adds `NAVIDROME_URL` /
+`NAVIDROME_USER` / `NAVIDROME_PASS`. See [`.env.example`](.env.example) for the full
+list (importer paths, Telegram notifications, webhook, discovery tuning).
+
 ## Stack
 
 - Python 3.11+
@@ -101,4 +132,5 @@ MEDIA_MCP_MODE=full JELLYSEERR_URL=... RADARR_URL=... RADARR_API_KEY=... \
 
 ## Status
 
-MVP — SAFE + FULL tools implemented. Webhook receiver pending.
+Movies/TV, audiobooks/ebooks, and music tools implemented (34 total). Webhook
+receiver live. Importers (`importer.py`, `music_importer.py`) run on the media host.

@@ -13,7 +13,7 @@ import json
 import os
 
 import requests
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 # ── Config from env ──────────────────────────────────────────
 
@@ -64,7 +64,7 @@ BANDCAMP_ENV = "/opt/appdata/music-importer/bandcamp.env"
 
 TIMEOUT = 15
 
-mcp = FastMCP("media-mcp")
+mcp = MCPServer("media-mcp")
 
 
 # ── Helpers ──────────────────────────────────────────────────
